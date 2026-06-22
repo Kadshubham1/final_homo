@@ -7,7 +7,7 @@
 import axios from 'axios';
 
 // Create axios instance with base URL
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://final-homo-backend-5e1f.onrender.com/api';
 
 console.log('[AuthService] API Base URL:', API_BASE_URL);
 

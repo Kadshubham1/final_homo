@@ -17,7 +17,7 @@ const OTPDebugPage = () => {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const url = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+    const url = import.meta.env.VITE_API_URL || 'https://final-homo-backend-5e1f.onrender.com/api';
     setApiUrl(url);
     checkBackendStatus(url);
   }, []);
