@@ -4,7 +4,7 @@
 import axios from 'axios'
 import Cookies from 'js-cookie'
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://final-homo-backend-5e1f.onrender.com/api'
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
