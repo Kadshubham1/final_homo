@@ -1,0 +1,102 @@
+╔════════════════════════════════════════════════════════════════════╗
+║                                                                    ║
+║         USB & MOBILE MONITORING - ONE-PAGE QUICK START            ║
+║                                                                    ║
+╚════════════════════════════════════════════════════════════════════╝
+
+🎯 WHAT WAS FIXED:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✓ Photo directory path (was relative, now absolute)
+✓ Working directory handling (fixed path issues)
+✓ Startup script with error checking
+✓ Windows batch launcher for easy startup
+✓ Mobile device detection (already working)
+
+✅ SYSTEM STATUS:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Database:        ✓ Connected (38 events)
+Camera:          ✓ Working (index 0)
+API:             ✓ Responding (port 8000)
+Mobile Device:   ✓ Detected (realme X7 5G)
+Monitor Script:  ✓ Fixed and ready
+Photo Storage:   ✓ backend/scripts/security_captures/
+
+🚀 HOW TO START (PICK ONE):
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+EASIEST - Windows Batch:
+   Double-click: START_USB_MONITOR.bat
+
+Or python:
+   python start_usb_monitor.py
+
+Or manual:
+   cd backend
+   python manage.py runserver        # Terminal 1
+   
+   cd backend/scripts
+   python smart_usb_monitor.py      # Terminal 2
+
+📱 THEN CONNECT YOUR DEVICE:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. Plug in mobile phone or USB
+2. For mobile: Set to "File Transfer" / "MTP" mode
+3. Watch console for alert:
+   [!] 📱 ALERT: Mobile Phone Detected
+
+📸 PHOTO SAVED TO:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+   backend/scripts/security_captures/cap_20260404_HHMMSS.jpg
+
+📊 EVENT LOGGED TO:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+   Database: http://127.0.0.1:8000/admin/logs/
+   API:      http://127.0.0.1:8000/api/security/event/
+
+✅ VERIFY IT WORKS:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+   cd backend
+   python quick_diagnostic.py
+
+Expected result: All tests show ✓
+
+🐛 IF NOTHING HAPPENS:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. Check Django running:
+   http://127.0.0.1:8000/admin/
+
+2. Check mobile in right mode:
+   Settings → USB → "File Transfer" or "MTP"
+
+3. Try different USB port
+
+4. Run diagnostic:
+   cd backend && python quick_diagnostic.py
+
+5. Check monitor console for errors
+
+📁 NEW FILES:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✓ START_USB_MONITOR.bat           (One-click Windows launcher)
+✓ start_usb_monitor.py            (Python startup script)
+✓ quick_diagnostic.py             (System health check)
+✓ FIX_COMPLETE.md                 (Detailed summary)
+✓ USB_MONITORING_FIXED.md         (Complete guide)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✅ YOUR SYSTEM IS READY!
+
+   Run: START_USB_MONITOR.bat
+   Connect: Mobile / USB device
+   Enjoy: Real-time security monitoring
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

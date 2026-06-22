@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: homomorphic-backend
+    env: python
+    buildCommand: ./build.sh
+    startCommand: gunicorn config.wsgi:application
+    baseDir: backend
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: homomorphic-db
+          property: connectionString
+      - key: DEBUG
+        value: "False"
+      - key: SECRET_KEY
+        generateValue: true
+      - key: PYTHON_VERSION
+        value: 3.10.10
+
+databases:
+  - name: homomorphic-db
+    plan: free

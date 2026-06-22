@@ -1,0 +1,108 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual Environment
+venv/
+env/
+ENV/
+.venv
+myvenv/
+
+# Django
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+/media
+/staticfiles
+*.pot
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Node.js
+node_modules/
+npm-debug.log
+yarn-error.log
+package-lock.json
+yarn.lock
+dist/
+
+# Build
+build/
+out/
+.next/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.bak
+*.swp
+*.swo
+
+# Coverage
+.coverage
+.pytest_cache/
+htmlcov/
+
+# Uploaded files and logs
+media/uploads/
+media/encrypted/
+media/usb_logs/
+logs/
+usb_monitor.log
+captured_*.jpg
+
+# IDE specific
+*.code-workspace
+.vscode-server/
+
+# Testing
+.pytest_cache/
+.tox/
+htmlcov/
+
+# Backup files
+*.backup
+*.orig
+
+# Local Django assets & media
+backend/media/
+backend/staticfiles/
+_unwanted_files_archive/
+
