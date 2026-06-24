@@ -92,9 +92,9 @@ function SharePage() {
         receiver_id: selectedUser,
       })
       
-      console.log('[SharePage] File shared successfully, OTP:', response.data.otp)
-      
-      toast.success('✅ File shared! OTP: ' + response.data.otp)
+      toast.success('✅ File shared! OTP: ' + response.data.otp, {
+        duration: 120000, // 2 minutes (120,000 ms)
+      })
       setSelectedFile(null)
       setSelectedUser(null)
       loadData()
@@ -249,12 +249,12 @@ function SharePage() {
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                       >
                         <option value="">-- Choose File --</option>
-                        {files.length === 0 ? (
-                          <option disabled>No files available</option>
+                        {files.filter(f => f.scope === 'public').length === 0 ? (
+                          <option disabled>No public files available</option>
                         ) : (
-                          files.map(f => (
+                          files.filter(f => f.scope === 'public').map(f => (
                             <option key={f.id} value={f.id}>
-                              {f.original_filename}
+                              {f.original_filename} (Public)
                             </option>
                           ))
                         )}

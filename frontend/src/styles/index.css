@@ -157,3 +157,62 @@
   backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.2);
 }
+
+/* Global Dark Mode Styling Overrides */
+.dark body, .dark #root, .dark .bg-gray-50 {
+  background-color: #0f172a !important; /* slate-900 */
+  color: #f8fafc !important; /* slate-50 */
+}
+
+.dark .bg-white, .dark .card {
+  background-color: #1e293b !important; /* slate-800 */
+  border-color: #334155 !important; /* slate-700 */
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -4px rgba(0, 0, 0, 0.3) !important;
+}
+
+.dark .text-gray-900, .dark h2, .dark h3, .dark font-bold {
+  color: #f1f5f9 !important; /* slate-100 */
+}
+
+.dark .text-gray-600, .dark .text-gray-500, .dark .text-gray-400 {
+  color: #94a3b8 !important; /* slate-400 */
+}
+
+.dark .border-gray-200, .dark .border-gray-100, .dark .border-b {
+  border-color: #334155 !important; /* slate-700 */
+}
+
+.dark header {
+  background-color: #1e293b !important; /* slate-800 */
+  border-color: #334155 !important;
+}
+
+.dark input, .dark textarea, .dark select {
+  background-color: #334155 !important; /* slate-700 */
+  color: #ffffff !important;
+  border-color: #475569 !important; /* slate-600 */
+}
+
+.dark input:focus, .dark textarea:focus {
+  border-color: #ff6b35 !important;
+  outline: none;
+}
+
+.dark table th {
+  color: #cbd5e1 !important; /* slate-300 */
+  border-bottom-color: #334155 !important;
+}
+
+.dark table td {
+  color: #e2e8f0 !important; /* slate-200 */
+}
+
+.dark tr:hover {
+  background-color: #334155 !important;
+}
+
+.dark .modal-content {
+  background-color: #1e293b !important;
+  color: #f1f5f9 !important;
+}
+

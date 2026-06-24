@@ -13,6 +13,7 @@ import SharePage from './pages/SharePage'
 import AdminDashboardPage from './pages/AdminDashboardPage'
 import AdminLogsPage from './pages/AdminLogsPage'
 import LiveMonitoringPage from './pages/LiveMonitoringPage'
+import SettingsPage from './pages/SettingsPage'
 import NotFoundPage from './pages/NotFoundPage'
 
 function ProtectedRoute({ children, isAdmin = false }) {
@@ -32,6 +33,15 @@ export default function App() {
       hydrateUser()
     }
   }, [isAuthenticated, user, hydrateUser])
+
+  useEffect(() => {
+    const theme = localStorage.getItem('sfs_theme')
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark')
+    } else {
+      document.documentElement.classList.remove('dark')
+    }
+  }, [])
   
   return (
     <Router>
@@ -45,6 +55,7 @@ export default function App() {
         <Route path="/upload" element={<ProtectedRoute><UploadPage /></ProtectedRoute>} />
         <Route path="/my-files" element={<ProtectedRoute><MyFilesPage /></ProtectedRoute>} />
         <Route path="/share" element={<ProtectedRoute><SharePage /></ProtectedRoute>} />
+        <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
         <Route path="/admin" element={<ProtectedRoute isAdmin><AdminDashboardPage /></ProtectedRoute>} />
         <Route path="/admin/logs" element={<ProtectedRoute isAdmin><AdminLogsPage /></ProtectedRoute>} />
         <Route path="/admin/live" element={<ProtectedRoute isAdmin><LiveMonitoringPage /></ProtectedRoute>} />

@@ -60,7 +60,7 @@ class FileShare(models.Model):
         """Generate OTP on creation"""
         if not self.pk:  # Only on creation
             self.generate_otp()
-            self.otp_expires_at = timezone.now() + timedelta(minutes=5)  # OTP valid for 5 minutes
+            self.otp_expires_at = timezone.now() + timedelta(minutes=30)  # OTP valid for 30 minutes
         super().save(*args, **kwargs)
     
     def generate_otp(self):
@@ -109,10 +109,10 @@ class FileShare(models.Model):
     
     def resend_otp(self):
         """Resend OTP by generating new one"""
-        if self.is_otp_expired() and not self.is_verified:
+        if not self.is_verified:
             self.generate_otp()
             self.otp_attempts = 0
-            self.otp_expires_at = timezone.now() + timedelta(minutes=5)
+            self.otp_expires_at = timezone.now() + timedelta(minutes=30)  # OTP valid for 30 minutes
             self.save()
             return {'success': True, 'message': 'New OTP sent!', 'otp': self.otp}
         else:

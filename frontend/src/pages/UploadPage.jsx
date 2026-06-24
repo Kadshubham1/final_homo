@@ -8,7 +8,7 @@ import toast from 'react-hot-toast'
 
 function UploadPage() {
   const [file, setFile] = useState(null)
-  const [scope, setScope] = useState('private')
+  const [scope, setScope] = useState(() => localStorage.getItem('sfs_default_scope') || 'private')
   const [loading, setLoading] = useState(false)
   const [securityAlert, setSecurityAlert] = useState({ show: false, message: '' })
 

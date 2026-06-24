@@ -159,19 +159,19 @@ class FileUploadViewSet(viewsets.ModelViewSet):
             )
         
         try:
-            # Check if encrypted file exists
+            # Decrypt content for download
             if file_obj.is_encrypted and file_obj.encrypted_file:
-                # Return the encrypted content directly as requested
-                file_obj.encrypted_file.seek(0)
-                file_content = file_obj.encrypted_file.read()
-                filename = f"{file_obj.original_filename}.enc"
-                mime_type = 'text/plain' # Use text/plain so it can be viewed in browser/notepad as 'encrypted format'
+                file_content = file_obj.decrypt_file_content()
+                if file_content is None:
+                    # Fallback if decryption failed
+                    file_obj.file.seek(0)
+                    file_content = file_obj.file.read()
             else:
-                # Fallback to original if not encrypted
                 file_obj.file.seek(0)
                 file_content = file_obj.file.read()
-                filename = file_obj.original_filename
-                mime_type = file_obj.mime_type
+            
+            filename = file_obj.original_filename
+            mime_type = file_obj.mime_type
             
             # Create download record
             FileDownload.objects.create(

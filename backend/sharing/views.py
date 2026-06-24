@@ -59,6 +59,12 @@ class FileShareViewSet(viewsets.ModelViewSet):
                 {'error': 'You can only share your own files.'},
                 status=status.HTTP_403_FORBIDDEN
             )
+        # Check if file is public (prevent private files from being shared)
+        if file_obj.scope != 'public':
+            return Response(
+                {'error': 'Private files cannot be shared. Only public files can be shared.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
         
         # Get receiver
         receiver = get_object_or_404(User, id=receiver_id)
