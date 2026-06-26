@@ -234,7 +234,7 @@ def capture_instant_photo():
         return None, "Capture Failed"
 
 def get_mobile_devices():
-    """Gets connected Mobile Phones (MTP/WPD/USB Storage) using multiple WMI methods"""
+    """Gets connected Mobile Phones (MTP/WPD) using Win32_PnPEntity"""
     devices = {}
     if not HAS_WMI: return devices
     
@@ -242,8 +242,6 @@ def get_mobile_devices():
         c = get_wmi_client()
         if not c: return devices
         
-        # Method 1: Detect via Win32_PnPEntity (PNP = Plug and Play)
-        # This catches WPD (Portable Devices) like phones
         try:
             for device in c.Win32_PnPEntity(ConfigManagerErrorCode=0):
                 try:
@@ -251,55 +249,28 @@ def get_mobile_devices():
                     name = getattr(device, 'Name', '')
                     device_id = getattr(device, 'PNPDeviceID', '')
                     
-                    # Match WPD or Portable Device
-                    if pnp_class == "WPD" or "Portable Device" in name or "MTP" in name:
-                        print(f"[+] Found mobile device: {name}")
-                        devices[name] = device_id
-                except:
-                    continue
-        except Exception as e:
-            print(f"[*] PnPEntity method error (non-critical): {e}")
-        
-        # Method 2: Detect via Win32_USBDevice with description containing phone/mobile
-        # This catches MTP devices that might not be classified as WPD
-        try:
-            for device in c.Win32_USBDevice():
-                try:
-                    name = getattr(device, 'Name', '')
-                    device_id = getattr(device, 'PNPDeviceID', '')
-                    description = getattr(device, 'Description', '')
+                    if not name: continue
+                    name_lower = name.lower()
                     
-                    # Look for keywords indicating a mobile device
-                    keywords = ['phone', 'mtp', 'android', 'iphone', 'samsung', 'mobile', 'portable']
-                    if any(keyword in name.lower() + description.lower() for keyword in keywords):
-                        print(f"[+] Found mobile USB device: {name} ({description})")
+                    # Identify mobile devices by class WPD, or name containing MTP, portable device, or common phone terms
+                    is_mobile = False
+                    if pnp_class == "WPD" or "portable device" in name_lower or "mtp" in name_lower:
+                        is_mobile = True
+                    elif any(keyword in name_lower for keyword in ['phone', 'android', 'iphone', 'samsung', 'mobile']):
+                        # Make sure it's not a generic USB hub or composite device
+                        if "hub" not in name_lower and "composite" not in name_lower:
+                            is_mobile = True
+                            
+                    if is_mobile:
+                        # Only log when finding new devices to avoid spamming
+                        if name not in devices:
+                            # print(f"[+] Found mobile device: {name}") # Removed to prevent spam every 2 seconds
+                            pass
                         devices[name] = device_id
                 except:
                     continue
         except Exception as e:
-            print(f"[*] USBDevice method error (non-critical): {e}")
-        
-        # Method 3: Also catch standard USB removable storage that could be phones
-        try:
-            for device in c.Win32_USBStorageDevice():
-                try:
-                    name = getattr(device, 'Name', '')
-                    device_id = getattr(device, 'PNPDeviceID', '')
-                    description = getattr(device, 'Description', '')
-                    
-                    # Only add if it looks like a mobile device
-                    if any(keyword in name.lower() + description.lower() for keyword in ['phone', 'mtp', 'android', 'mobile']):
-                        print(f"[+] Found mobile storage: {name}")
-                        devices[name] = device_id
-                except:
-                    continue
-        except Exception as e:
-            print(f"[*] USBStorageDevice method error (non-critical): {e}")
-        
-        if devices:
-            print(f"[*] Total mobile devices detected: {len(devices)}")
-        else:
-            print("[*] No mobile devices detected")
+            print(f"[*] PnPEntity method error: {e}")
             
     except Exception as e:
         print(f"[-] Mobile device detection error: {e}")
@@ -425,7 +396,7 @@ def stop_watching(drive_letter):
 
 def main():
     print("="*50)
-    print("🛡️ REAL-TIME SECURITY MONITORING ENGAGED")
+    print("REAL-TIME SECURITY MONITORING ENGAGED")
     print("   - Using Instant Photo Capture")
     print("   - File Copy Tracking Active" if HAS_WATCHDOG else "   - File Copy Tracking Unavailable")
     print("="*50)
@@ -448,7 +419,7 @@ def main():
             # 1. Check for Mobile Phones Inserted
             for phone_name, device_id in new_mobiles.items():
                 if phone_name not in current_mobiles:
-                    print(f"\n[!] 📱 ALERT: Mobile Phone Detected: {phone_name}")
+                    print(f"\n[!] ALERT: Mobile Phone Detected: {phone_name}")
                     print(f"[*] Device ID: {device_id}")
                     image_path, face_status = capture_instant_photo()
                     if image_path:
@@ -463,25 +434,25 @@ def main():
                         image_path=image_path,
                         face_status=face_status
                     )
-                    print(f"[{'✓' if success else '✗'}] Event {'sent' if success else 'failed'} to server")
+                    print(f"[{'OK' if success else 'FAIL'}] Event {'sent' if success else 'failed'} to server")
             
             # 2. Check for Mobile Phones Removed
             for phone_name, device_id in list(current_mobiles.items()):
                 if phone_name not in new_mobiles:
-                    print(f"\n[!] ⚪ ALERT: Mobile Phone Removed: {phone_name}")
+                    print(f"\n[!] ALERT: Mobile Phone Removed: {phone_name}")
                     success = send_security_event(
                         action="Mobile Removed",
                         device_name=f"Mobile Device ({phone_name})",
                         device_id=device_id
                     )
-                    print(f"[{'✓' if success else '✗'}] Event {'sent' if success else 'failed'} to server")
+                    print(f"[{'OK' if success else 'FAIL'}] Event {'sent' if success else 'failed'} to server")
             
             current_mobiles = new_mobiles
             
             # 3. Check for newly inserted standard drives
             for drive_letter, serial in new_drives.items():
                 if drive_letter not in current_drives:
-                    print(f"\n[!] 🔴 ALERT: USB Detected: {drive_letter} (ID: {serial})")
+                    print(f"\n[!] ALERT: USB Detected: {drive_letter} (ID: {serial})")
                         
                     # Instantly take photo
                     image_path, face_status = capture_instant_photo()
@@ -497,7 +468,7 @@ def main():
                         image_path=image_path,
                         face_status=face_status
                     )
-                    print(f"[{'✓' if success else '✗'}] Event {'sent' if success else 'failed'} to server")
+                    print(f"[{'OK' if success else 'FAIL'}] Event {'sent' if success else 'failed'} to server")
                     
                     # Start monitoring the drive using watchdog
                     start_watching(drive_letter, serial)
@@ -505,7 +476,7 @@ def main():
             # 4. Check for removed drives
             for drive_letter, serial in list(current_drives.items()):
                 if drive_letter not in new_drives:
-                    print(f"\n[!] ⚪ ALERT: USB Removed: {drive_letter} (ID: {serial})")
+                    print(f"\n[!] ALERT: USB Removed: {drive_letter} (ID: {serial})")
                     stop_watching(drive_letter)
                     
                     success = send_security_event(
@@ -513,7 +484,7 @@ def main():
                         device_name=f"USB Drive ({drive_letter})",
                         device_id=serial
                     )
-                    print(f"[{'✓' if success else '✗'}] Event {'sent' if success else 'failed'} to server")
+                    print(f"[{'OK' if success else 'FAIL'}] Event {'sent' if success else 'failed'} to server")
                     
             current_drives = new_drives
             
