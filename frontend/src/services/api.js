@@ -176,8 +176,11 @@ export const sharingAPI = {
 }
 
 // ============ Security Logs APIs ============
-// Transparent USB Detection - Event logging only
 export const securityAPI = {
+  // Admin Dashboard Stats
+  getSecurityDashboard: () =>
+    apiClient.get('/security/admin/dashboard/'),
+
   // Advanced Security Events (Photos, Face Rec, MTP)
   getSecurityEvents: () =>
     apiClient.get('/security/event/'),

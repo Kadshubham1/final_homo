@@ -18,6 +18,8 @@ export default function SecurityLogsPage() {
   });
   const [stats, setStats] = useState(null);
 
+  const [activeTab, setActiveTab] = useState('usb');
+
   // Check admin access
   useEffect(() => {
     if (!user || user.role !== 'admin') {
@@ -25,17 +27,21 @@ export default function SecurityLogsPage() {
     }
   }, [user, navigate]);
 
-  // Fetch USB logs
+  // Fetch USB logs with polling
   useEffect(() => {
     if (!user || user.role !== 'admin') return;
     
-    loadLogs();
-  }, [filters]);
+    loadLogs(false);
+    const interval = setInterval(() => {
+      loadLogs(true);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [filters, activeTab]);
 
-  const loadLogs = async () => {
+  const loadLogs = async (isPolling = false) => {
     try {
-      setLoading(true);
-      setError('');
+      if (!isPolling) setLoading(true);
+      if (!isPolling) setError('');
 
       const response = await securityAPI.getLogs();
       
@@ -44,6 +50,11 @@ export default function SecurityLogsPage() {
       
       // Apply filters in-memory if needed
       let filteredLogs = logsData;
+      
+      if (activeTab === 'usb') {
+        filteredLogs = filteredLogs.filter(log => log.action.includes('USB'));
+      }
+      
       if (filters.action !== 'all') {
         filteredLogs = filteredLogs.filter(log => log.action === filters.action);
       }
@@ -54,12 +65,12 @@ export default function SecurityLogsPage() {
       setLogs(filteredLogs);
 
       // Load stats
-      loadStats();
+      if (!isPolling) loadStats();
     } catch (err) {
       console.error('Error loading USB logs:', err);
-      setError('Failed to load USB logs. ' + (err.response?.data?.detail || err.message));
+      if (!isPolling) setError('Failed to load USB logs. ' + (err.response?.data?.detail || err.message));
     } finally {
-      setLoading(false);
+      if (!isPolling) setLoading(false);
     }
   };
 
@@ -83,19 +94,36 @@ export default function SecurityLogsPage() {
     return action;
   };
 
+  // Compute active devices
+  const latestEventsByDevice = {};
+  logs.filter(l => l.action.includes('USB') && l.device_id).forEach(log => {
+    if (!latestEventsByDevice[log.device_id]) {
+      latestEventsByDevice[log.device_id] = log;
+    }
+  });
+  const activeDevices = Object.values(latestEventsByDevice).filter(
+    l => l.action === 'USB Inserted' || l.action === 'USB_INSERTED'
+  );
+
   const exportCSV = () => {
     try {
       // Create CSV content
-      const headers = ['Timestamp', 'User', 'Action', 'Device', 'Device Path', 'Hostname', 'System'];
-      const rows = logs.map(log => [
-        log.timestamp,
-        log.user?.username || 'Unknown',
-        log.action,
-        log.device_name || 'N/A',
-        log.device_path || 'N/A',
-        log.hostname || 'N/A',
-        log.system_type || 'N/A'
-      ]);
+      const headers = ['Timestamp', 'User', 'Action', 'Device', 'Manufacturer', 'VID', 'PID', 'Device Path', 'Hostname', 'System'];
+      const rows = logs.map(log => {
+        const sysInfo = log.system_info || {};
+        return [
+          log.timestamp,
+          log.user?.username || 'Unknown',
+          log.action,
+          log.device_name || 'N/A',
+          sysInfo.manufacturer || 'N/A',
+          sysInfo.vid || 'N/A',
+          sysInfo.pid || 'N/A',
+          log.device_path || 'N/A',
+          log.hostname || 'N/A',
+          sysInfo.os || log.system_type || 'N/A'
+        ];
+      });
 
       let csv = headers.join(',') + '\n';
       rows.forEach(row => {
@@ -119,16 +147,39 @@ export default function SecurityLogsPage() {
       <Sidebar />
       
       <div className="flex-1 flex flex-col overflow-hidden">
-        <Header title="🔐 Security Logs - USB Monitoring" />
+        <Header title="🔐 Security Logs - Live Monitoring" />
         
         <div className="flex-1 overflow-auto">
           <div className="p-6">
-            {/* Alert Info */}
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-              <p className="text-sm text-blue-800">
-                ✅ <strong>Transparent Mode:</strong> This page logs USB device connection events for security audit trail.
-                No personal data or images are captured.
-              </p>
+            
+            {/* Tabs */}
+            <div className="flex border-b border-gray-200 mb-6">
+              <button
+                onClick={() => setActiveTab('usb')}
+                className={`py-2 px-4 font-medium text-sm focus:outline-none ${activeTab === 'usb' ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+              >
+                USB Drive Logs
+              </button>
+              <button
+                onClick={() => setActiveTab('all')}
+                className={`py-2 px-4 font-medium text-sm focus:outline-none ${activeTab === 'all' ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+              >
+                All Security Events
+              </button>
+            </div>
+
+            {/* Current Status Banner */}
+            <div className={`rounded-lg p-4 mb-6 border ${activeDevices.length > 0 ? 'bg-orange-50 border-orange-200' : 'bg-green-50 border-green-200'}`}>
+              <h3 className={`font-bold ${activeDevices.length > 0 ? 'text-orange-800' : 'text-green-800'}`}>
+                {activeDevices.length > 0 ? '⚠️ USB Devices Currently Connected:' : '✅ No USB Device Connected'}
+              </h3>
+              {activeDevices.length > 0 && (
+                <ul className="mt-2 text-sm text-orange-700 list-disc list-inside">
+                  {activeDevices.map(d => (
+                    <li key={d.id}>{d.device_name || 'Unknown Device'} (Serial: {d.device_id})</li>
+                  ))}
+                </ul>
+              )}
             </div>
 
             {/* Statistics */}
@@ -214,9 +265,9 @@ export default function SecurityLogsPage() {
                       <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">User</th>
                       <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Action</th>
                       <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Device Name</th>
-                      <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Device Path</th>
-                      <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Hostname</th>
+                      <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Hardware Info</th>
                       <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">System</th>
+                      <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Photo</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
@@ -229,37 +280,48 @@ export default function SecurityLogsPage() {
                     ) : logs.length === 0 ? (
                       <tr>
                         <td colSpan="7" className="px-6 py-8 text-center text-gray-500">
-                          No USB activity logs yet. USB detection is running in transparent mode.
+                          No logs available.
                         </td>
                       </tr>
                     ) : (
-                      logs.map((log) => (
-                        <tr key={log.id} className="hover:bg-gray-50">
-                          <td className="px-6 py-4 text-sm text-gray-900 whitespace-nowrap">
-                            {formatTime(log.timestamp)}
-                          </td>
-                          <td className="px-6 py-4 text-sm text-gray-900">
-                            {log.user?.username || 'Unknown'}
-                          </td>
-                          <td className="px-6 py-4 text-sm">
-                            <span className="px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                              {getActionIcon(log.action)}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 text-sm text-gray-700">
-                            {log.device_name || 'N/A'}
-                          </td>
-                          <td className="px-6 py-4 text-sm text-gray-600 font-mono text-xs">
-                            {log.device_path || 'N/A'}
-                          </td>
-                          <td className="px-6 py-4 text-sm text-gray-700">
-                            {log.hostname || 'N/A'}
-                          </td>
-                          <td className="px-6 py-4 text-sm text-gray-700">
-                            {log.system_type || 'N/A'}
-                          </td>
-                        </tr>
-                      ))
+                      logs.map((log) => {
+                        const sysInfo = log.system_info || {};
+                        return (
+                          <tr key={log.id} className="hover:bg-gray-50">
+                            <td className="px-6 py-4 text-sm text-gray-900 whitespace-nowrap">
+                              {formatTime(log.timestamp)}
+                            </td>
+                            <td className="px-6 py-4 text-sm text-gray-900">
+                              {log.user?.username || 'Unknown'}
+                            </td>
+                            <td className="px-6 py-4 text-sm">
+                              <span className={`px-3 py-1 rounded-full text-xs font-medium ${log.action.includes('USB') ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'}`}>
+                                {getActionIcon(log.action)}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 text-sm text-gray-700">
+                              <div className="font-medium">{log.device_name || 'N/A'}</div>
+                              {log.device_path && <div className="text-xs text-gray-500">Path: {log.device_path}</div>}
+                            </td>
+                            <td className="px-6 py-4 text-sm text-gray-700 font-mono text-xs">
+                              {sysInfo.manufacturer && <div>Mfr: {sysInfo.manufacturer}</div>}
+                              {(sysInfo.vid || sysInfo.pid) && <div>VID:PID: {sysInfo.vid}:{sysInfo.pid}</div>}
+                              {log.device_id && <div>Serial: {log.device_id}</div>}
+                            </td>
+                            <td className="px-6 py-4 text-sm text-gray-700">
+                              <div>{log.hostname || 'N/A'}</div>
+                              <div className="text-xs text-gray-500">{sysInfo.os || log.system_type || 'N/A'}</div>
+                            </td>
+                            <td className="px-6 py-4 text-sm">
+                              {log.image ? (
+                                <img src={log.image} alt="Security snapshot" className="w-16 h-12 object-cover rounded cursor-pointer hover:opacity-80" onClick={() => window.open(log.image, '_blank')} />
+                              ) : (
+                                <span className="text-gray-400 italic text-xs">No Photo</span>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })
                     )}
                   </tbody>
                 </table>

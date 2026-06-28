@@ -36,6 +36,7 @@ class USBEventCreateSerializer(serializers.Serializer):
     device_id = serializers.CharField(max_length=255, required=False, allow_blank=True)
     hostname = serializers.CharField(max_length=255, required=False, allow_blank=True)
     system_type = serializers.CharField(max_length=50, required=False, allow_blank=True)
+    system_info = serializers.JSONField(required=False, allow_null=True)
     notes = serializers.CharField(max_length=1000, required=False, allow_blank=True)
 
 

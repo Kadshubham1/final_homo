@@ -14,12 +14,26 @@ function AdminDashboardPage() {
   }, [])
 
   const loadStats = async () => {
+    console.log('[Admin Dashboard] Dashboard Loaded');
+    console.log('[Admin Dashboard] Fetching Admin Stats');
     try {
+      setLoading(true)
       const [authStats, fileStats, securityStats] = await Promise.all([
         authAPI.getAdminStats(),
         fileAPI.getStats(),
         securityAPI.getSecurityDashboard(),
       ])
+      
+      console.log('[Admin Dashboard] API URLs Called:', {
+        auth: '/auth/admin/stats/',
+        files: '/files/stats/',
+        security: '/security/admin/dashboard/'
+      });
+      console.log('[Admin Dashboard] Response Data:', {
+        users: authStats.data,
+        files: fileStats.data,
+        security: securityStats.data
+      });
       
       setStats({
         users: authStats.data,
@@ -27,7 +41,23 @@ function AdminDashboardPage() {
         security: securityStats.data,
       })
     } catch (error) {
-      toast.error('Failed to load admin stats')
+      console.error('[Admin Dashboard] Error Stack:', error);
+      
+      let errMsg = 'Internal Server Error';
+      if (error.response) {
+        console.error('[Admin Dashboard] Response Status:', error.response.status);
+        console.error('[Admin Dashboard] Response Data:', error.response.data);
+        if (error.response.status === 401 || error.response.status === 403) {
+          errMsg = 'Authentication Failed / Unauthorized';
+        } else if (error.response.status === 404) {
+          errMsg = 'Endpoint Not Found';
+        } else {
+          errMsg = 'Database Connection Failed / Backend Error';
+        }
+      } else {
+        errMsg = error.message;
+      }
+      toast.error(`Failed to load admin stats: ${errMsg}`);
     } finally {
       setLoading(false)
     }

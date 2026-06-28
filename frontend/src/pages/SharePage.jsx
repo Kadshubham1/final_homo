@@ -5,6 +5,98 @@ import { Card, NoData } from '../components/UI'
 import { sharingAPI, fileAPI, authAPI } from '../services/api'
 import toast from 'react-hot-toast'
 
+const OtpCountdownToast = ({ otp, expiresAt, t }) => {
+  const [timeLeft, setTimeLeft] = useState(() => {
+    const now = new Date().getTime()
+    const expiryTime = new Date(expiresAt).getTime()
+    return Math.max(0, Math.floor((expiryTime - now) / 1000))
+  })
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const now = new Date().getTime()
+      const expiryTime = new Date(expiresAt).getTime()
+      const left = Math.max(0, Math.floor((expiryTime - now) / 1000))
+      setTimeLeft(left)
+      
+      if (left <= 0) {
+        clearInterval(timer)
+        toast.dismiss(t.id)
+        toast.error('OTP has expired. Please generate a new OTP.', { duration: 4000 })
+      }
+    }, 1000)
+    return () => clearInterval(timer)
+  }, [expiresAt, t.id])
+
+  if (timeLeft <= 0) return null
+
+  return (
+    <div>
+      <p>✅ File shared! OTP: <strong>{otp}</strong></p>
+      <p className="mt-1 font-mono text-sm font-bold text-orange-600">
+        OTP Expires In: {String(Math.floor(timeLeft / 60)).padStart(2, '0')}:{String(timeLeft % 60).padStart(2, '0')}
+      </p>
+    </div>
+  )
+}
+
+const PendingVerifySection = ({ share, otpInput, setOtpInput, handleVerifyOTP, verifying }) => {
+  const [timeLeft, setTimeLeft] = useState(() => {
+    const now = new Date().getTime()
+    const expiryTime = new Date(share.otp_expires_at).getTime()
+    return Math.max(0, Math.floor((expiryTime - now) / 1000))
+  })
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const now = new Date().getTime()
+      const expiryTime = new Date(share.otp_expires_at).getTime()
+      setTimeLeft(Math.max(0, Math.floor((expiryTime - now) / 1000)))
+    }, 1000)
+    return () => clearInterval(timer)
+  }, [share.otp_expires_at])
+
+  const isExpired = timeLeft <= 0 || share.status === 'expired'
+
+  if (isExpired) {
+    return (
+      <div className="mt-4 pt-4 border-t border-gray-300">
+        <p className="text-red-600 font-bold">OTP has expired. Please generate a new OTP.</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="mt-4 pt-4 border-t border-gray-300">
+      <div className="flex justify-between items-center mb-2">
+        <label className="block text-sm font-medium text-gray-700">
+          Enter OTP to Verify:
+        </label>
+        <span className="text-orange-600 font-bold text-sm font-mono">
+          OTP Expires In: {String(Math.floor(timeLeft / 60)).padStart(2, '0')}:{String(timeLeft % 60).padStart(2, '0')}
+        </span>
+      </div>
+      <div className="flex gap-2">
+        <input
+          type="text"
+          placeholder="Enter 6-digit OTP"
+          value={otpInput[share.id] || ''}
+          onChange={(e) => setOtpInput({ ...otpInput, [share.id]: e.target.value })}
+          maxLength="6"
+          className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+        <button
+          onClick={() => handleVerifyOTP(share.id)}
+          disabled={verifying[share.id] || !otpInput[share.id]}
+          className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 transition-colors"
+        >
+          {verifying[share.id] ? '⏳ Verifying...' : '✅ Verify'}
+        </button>
+      </div>
+    </div>
+  )
+}
+
 function SharePage() {
   const [files, setFiles] = useState([])
   const [users, setUsers] = useState([])
@@ -92,9 +184,13 @@ function SharePage() {
         receiver_id: selectedUser,
       })
       
-      toast.success('✅ File shared! OTP: ' + response.data.otp, {
-        duration: 120000, // 2 minutes (120,000 ms)
-      })
+      toast((t) => (
+        <OtpCountdownToast 
+          otp={response.data.otp} 
+          expiresAt={response.data.share.otp_expires_at} 
+          t={t} 
+        />
+      ), { duration: 55000 })
       setSelectedFile(null)
       setSelectedUser(null)
       loadData()
@@ -359,28 +455,13 @@ function SharePage() {
                         </div>
 
                         {!share.is_verified && (
-                          <div className="mt-4 pt-4 border-t border-gray-300">
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                              Enter OTP to Verify:
-                            </label>
-                            <div className="flex gap-2">
-                              <input
-                                type="text"
-                                placeholder="Enter 6-digit OTP"
-                                value={otpInput[share.id] || ''}
-                                onChange={(e) => setOtpInput({ ...otpInput, [share.id]: e.target.value })}
-                                maxLength="6"
-                                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                              />
-                              <button
-                                onClick={() => handleVerifyOTP(share.id)}
-                                disabled={verifying[share.id] || !otpInput[share.id]}
-                                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 transition-colors"
-                              >
-                                {verifying[share.id] ? '⏳ Verifying...' : '✅ Verify'}
-                              </button>
-                            </div>
-                          </div>
+                          <PendingVerifySection
+                            share={share}
+                            otpInput={otpInput}
+                            setOtpInput={setOtpInput}
+                            handleVerifyOTP={handleVerifyOTP}
+                            verifying={verifying}
+                          />
                         )}
 
                         {share.is_verified && (

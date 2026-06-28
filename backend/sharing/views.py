@@ -83,12 +83,19 @@ class FileShareViewSet(viewsets.ModelViewSet):
                     status=status.HTTP_400_BAD_REQUEST
                 )
             else:
-                # Return existing share
+                # Regenerate OTP securely on duplicate pending requests to avoid exposing hashed DB value
+                from django.utils import timezone
+                from datetime import timedelta
+                existing_share.generate_otp()
+                existing_share.otp_attempts = 0
+                existing_share.otp_expires_at = timezone.now() + timedelta(seconds=50)
+                existing_share.save()
+                
                 return Response(
                     {
-                        'message': 'Share request already pending for this user.',
+                        'message': 'Share request already pending for this user. Regenerated OTP.',
                         'share': FileShareSerializer(existing_share).data,
-                        'otp': existing_share.otp  # Show OTP for testing
+                        'otp': existing_share.plain_otp  # Show new OTP for testing
                     },
                     status=status.HTTP_200_OK
                 )
@@ -111,7 +118,7 @@ class FileShareViewSet(viewsets.ModelViewSet):
             {
                 'message': f'File shared with {receiver.name or receiver.username}. OTP sent!',
                 'share': FileShareSerializer(file_share).data,
-                'otp': file_share.otp  # For development/testing - hide in production
+                'otp': getattr(file_share, 'plain_otp', None)  # For development/testing - hide in production
             },
             status=status.HTTP_201_CREATED
         )
@@ -157,9 +164,18 @@ class FileShareViewSet(viewsets.ModelViewSet):
         # Verify OTP
         result = file_share.verify_otp(otp)
         
+        if not result['success']:
+            return Response(
+                {
+                    'error': 'Invalid or Expired OTP',
+                    'message': 'Invalid or Expired OTP'
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
         return Response(
             {
-                'success': result['success'],
+                'success': True,
                 'message': result['message'],
                 'share': FileShareSerializer(file_share).data
             },

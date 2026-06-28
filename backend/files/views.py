@@ -128,29 +128,35 @@ class FileUploadViewSet(viewsets.ModelViewSet):
         
         # Check permissions
         can_download = False
+        decrypt_file = False
         
-        # Owner can always download
-        if file_obj.user == request.user:
+        # First, check if the requesting user is the receiver of a verified share.
+        # Decryption occurs only after successful OTP verification on the server.
+        from sharing.models import FileShare
+        share = FileShare.objects.filter(
+            file=file_obj,
+            receiver=request.user,
+            is_verified=True
+        ).first()
+        
+        if share:
             can_download = True
+            decrypt_file = True
         
-        # Admin can always download
+        # Owner can always download, but direct download returns encrypted file only (no decryption)
+        elif file_obj.user == request.user:
+            can_download = True
+            decrypt_file = False
+        
+        # Admin can always download, but direct download returns encrypted file only (no decryption)
         elif request.user.is_admin:
             can_download = True
+            decrypt_file = False
         
-        # Public files can be downloaded by anyone
+        # Public files can be downloaded directly, but returns encrypted file only (no decryption)
         elif file_obj.scope == 'public':
             can_download = True
-        
-        # Check if file is shared and verified with this user
-        elif file_obj.scope == 'private':
-            from sharing.models import FileShare
-            share = FileShare.objects.filter(
-                file=file_obj,
-                receiver=request.user,
-                is_verified=True
-            ).first()
-            if share:
-                can_download = True
+            decrypt_file = False
         
         if not can_download:
             return Response(
@@ -159,19 +165,29 @@ class FileUploadViewSet(viewsets.ModelViewSet):
             )
         
         try:
-            # Decrypt content for download
-            if file_obj.is_encrypted and file_obj.encrypted_file:
+            # Decrypt content only if accessed via a verified share
+            if decrypt_file and file_obj.is_encrypted and file_obj.encrypted_file:
                 file_content = file_obj.decrypt_file_content()
                 if file_content is None:
                     # Fallback if decryption failed
                     file_obj.file.seek(0)
                     file_content = file_obj.file.read()
             else:
-                file_obj.file.seek(0)
-                file_content = file_obj.file.read()
+                # Direct download from My Files (returns the encrypted file only)
+                if file_obj.encrypted_file:
+                    file_obj.encrypted_file.seek(0)
+                    file_content = file_obj.encrypted_file.read()
+                else:
+                    file_obj.file.seek(0)
+                    file_content = file_obj.file.read()
             
             filename = file_obj.original_filename
             mime_type = file_obj.mime_type
+            
+            if not decrypt_file:
+                # Force binary attachment download for encrypted files
+                filename = f"{filename}.enc"
+                mime_type = 'application/octet-stream'
             
             # Create download record
             FileDownload.objects.create(

@@ -113,6 +113,7 @@ class USBActivityLogViewSet(viewsets.ModelViewSet):
                 device_id=serializer.validated_data.get('device_id', ''),
                 hostname=serializer.validated_data.get('hostname', ''),
                 system_type=serializer.validated_data.get('system_type', ''),
+                system_info=serializer.validated_data.get('system_info', {}),
                 notes=serializer.validated_data.get('notes', '')
             )
             
@@ -256,6 +257,8 @@ class AdminSecurityDashboard(generics.GenericAPIView):
             'insertions': usb_logs.filter(action='USB_INSERTED').count(),
             'removals': usb_logs.filter(action='USB_REMOVED').count(),
             'unauthorized_devices': SecurityEvent.objects.filter(is_authorized=False).count(),
+            'high_risk_events': SecurityEvent.objects.filter(is_authorized=False).count(),
+            'suspicious_events': SecurityEvent.objects.filter(face_status='Unknown').count(),
         }
         
         # Alert Stats

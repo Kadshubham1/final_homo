@@ -27,7 +27,7 @@ class FileShare(models.Model):
     receiver = models.ForeignKey(User, on_delete=models.CASCADE, related_name='received_shares')
     
     # OTP
-    otp = models.CharField(max_length=10)
+    otp = models.CharField(max_length=128)
     otp_attempts = models.IntegerField(default=0)
     max_otp_attempts = models.IntegerField(default=3)
     otp_created_at = models.DateTimeField(auto_now_add=True)
@@ -60,12 +60,15 @@ class FileShare(models.Model):
         """Generate OTP on creation"""
         if not self.pk:  # Only on creation
             self.generate_otp()
-            self.otp_expires_at = timezone.now() + timedelta(minutes=30)  # OTP valid for 30 minutes
+            self.otp_expires_at = timezone.now() + timedelta(seconds=50)
         super().save(*args, **kwargs)
     
     def generate_otp(self):
         """Generate random 6-digit OTP"""
-        self.otp = ''.join(random.choices(string.digits, k=6))
+        from django.contrib.auth.hashers import make_password
+        plain_otp = ''.join(random.choices(string.digits, k=6))
+        self.plain_otp = plain_otp
+        self.otp = make_password(plain_otp)
     
     def is_otp_expired(self):
         """Check if OTP has expired"""
@@ -94,7 +97,8 @@ class FileShare(models.Model):
         self.otp_attempts += 1
         self.save()
         
-        if str(entered_otp) == str(self.otp):
+        from django.contrib.auth.hashers import check_password
+        if check_password(str(entered_otp), self.otp):
             self.is_verified = True
             self.status = 'verified'
             self.verified_at = timezone.now()
@@ -112,9 +116,9 @@ class FileShare(models.Model):
         if not self.is_verified:
             self.generate_otp()
             self.otp_attempts = 0
-            self.otp_expires_at = timezone.now() + timedelta(minutes=30)  # OTP valid for 30 minutes
+            self.otp_expires_at = timezone.now() + timedelta(seconds=50)
             self.save()
-            return {'success': True, 'message': 'New OTP sent!', 'otp': self.otp}
+            return {'success': True, 'message': 'New OTP sent!', 'otp': self.plain_otp}
         else:
             return {'success': False, 'message': 'Cannot resend OTP at this time.'}
 
